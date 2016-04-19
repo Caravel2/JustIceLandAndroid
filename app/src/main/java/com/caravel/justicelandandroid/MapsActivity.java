@@ -20,7 +20,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private LinkedList<DataSet> mItemList;
 
 
-
+    /**--------  Life Cycle  --------**/
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,8 +32,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
 
         //=====================//
+        mItemList = new LinkedList<DataSet>();
+        initDataSet();
 
-        initDataSet(mItemList);
+
 
 
 
@@ -41,7 +43,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
-    /**-------- 1. Override Method --------**/
+    /**-------- 1. Custom Method --------**/
+
+    public void initDataSet() {
+
+        DataSet marker1 = new DataSet("a地點", new LatLng(22.637580, 120.307460));
+        DataSet marker2 = new DataSet("b地點", new LatLng(22.620032, 120.312223));
+        DataSet marker3 = new DataSet("c地點", new LatLng(22.60585, 120.300808));
+        DataSet marker4 = new DataSet("d地點", new LatLng(22.637580, 120.307460));
+        DataSet marker5 = new DataSet("e地點", new LatLng(22.625103, 120.294456));
+        DataSet marker6 = new DataSet("f地點", new LatLng(22.624865, 120.316429));
+
+
+        Log.d("status", "初始資料" + mItemList);
+
+
+        mItemList.add(marker1);
+        mItemList.add(marker2);
+        mItemList.add(marker3);
+        mItemList.add(marker4);
+        mItemList.add(marker5);
+        mItemList.add(marker6);
+
+
+        Log.d("status", "初始資料" + mItemList);
+
+    }
+
+
+    /**-------- 2. Custom Class --------**/
+
+
+
+    /**-------- 3. Override Method --------**/
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -84,36 +118,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     }
-
-    /**-------- 2. Custom Method --------**/
-
-    public void initDataSet(LinkedList<DataSet> list){
-
-        DataSet marker1 = new DataSet("a地點",new LatLng(22.637580,120.307460));
-        DataSet marker2 = new DataSet("a地點",new LatLng(22.637580,120.307460));
-        DataSet marker3 = new DataSet("a地點",new LatLng(22.637580,120.307460));
-        DataSet marker4 = new DataSet("a地點",new LatLng(22.637580,120.307460));
-        DataSet marker5 = new DataSet("a地點",new LatLng(22.637580,120.307460));
-        DataSet marker6 = new DataSet("a地點",new LatLng(22.637580,120.307460));
-
-
-
-        Log.d("status", "初始資料" + mItemList);
-
-
-        list.add(marker1);
-        list.add(marker2);
-        list.add(marker3);
-        list.add(marker4);
-        list.add(marker5);
-        list.add(marker6);
-
-
-        Log.d("status", "初始資料" + mItemList);
-
-    }
-
-
 
 
 
