@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">JustIceLandAndroid</string>
-    <string name="title_activity_maps">Map</string>
+    <string name="title_activity_maps">GDG 地圖範例</string>
 </resources>

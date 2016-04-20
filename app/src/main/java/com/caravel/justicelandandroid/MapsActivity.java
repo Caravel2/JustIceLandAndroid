@@ -7,8 +7,13 @@ import android.os.Handler;
 import android.os.SystemClock;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
+import android.view.View;
 import android.view.animation.BounceInterpolator;
 import android.view.animation.Interpolator;
+import android.view.animation.LinearInterpolator;
+import android.widget.ImageView;
+import android.widget.RatingBar;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -20,6 +25,8 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -27,19 +34,26 @@ import java.util.List;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
                                                         GoogleMap.OnMarkerClickListener,
-                                                        GoogleMap.OnMapClickListener{
+                                                        GoogleMap.OnMapClickListener,
+                                                        GoogleMap.OnMapLongClickListener{
 
     /**--------  Variable Declare  --------**/
     private static final String TAG = MapsActivity.class.getSimpleName();
     private static final LatLng GDG_POS = new LatLng(22.604755,120.300524);
 
     private GoogleMap mMap;
+    private Marker shrimp;
+    private Marker mMarker;
 
 
     private LinkedList<DataSet> mItemList;
     private List<LatLng> listPoint;
 
 
+    private Polyline polyline;
+    private PolylineOptions polylineOptions;
+
+    private LatLng prevPos = GDG_POS;
 
     /**--------  Life Cycle  --------**/
     @Override
@@ -68,12 +82,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void initDataSet() {
 
-        DataSet marker1 = new DataSet("a地點", new LatLng(22.637580, 120.307460));
-        DataSet marker2 = new DataSet("b地點", new LatLng(22.620032, 120.312223));
-        DataSet marker3 = new DataSet("c地點", new LatLng(22.60585, 120.300808));
-        DataSet marker4 = new DataSet("d地點", new LatLng(22.637580, 120.307460));
-        DataSet marker5 = new DataSet("e地點", new LatLng(22.625103, 120.294456));
-        DataSet marker6 = new DataSet("f地點", new LatLng(22.624865, 120.316429));
+        DataSet marker1 = new DataSet("三多商圈", new LatLng(22.613835, 120.304676),R.drawable.view_2,3.2f);
+        DataSet marker2 = new DataSet("85大樓"  , new LatLng(22.611649, 120.300268),R.drawable.view_1,5f);
+        DataSet marker3 = new DataSet("市立總圖", new LatLng(22.610042, 120.301829),R.drawable.view_3,6.8f);
+        DataSet marker4 = new DataSet("勞工公園", new LatLng(22.607257, 120.309315),R.drawable.view_1,1.5f);
+        DataSet marker5 = new DataSet("星光水岸", new LatLng(22.606789, 120.297462),R.drawable.view_4,5.1f);
+        DataSet marker6 = new DataSet("生日公園", new LatLng(22.618366, 120.304268),R.drawable.view_1,2f);
 
 
 
@@ -89,8 +103,128 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+//    private void clearPolyline() {
+//        if (polyline != null) {
+//            polyline.remove();
+//        }
+//
+//        polylineOptions = new PolylineOptions().width(5).color(Color.BLUE).geodesic(true);
+//        polylineOptions.color(Color.RED);
+//
+//    }
+
+    public void animateMarker(final Marker marker, final LatLng toPosition,
+                              final boolean hideMarker) {
+        final Handler handler = new Handler();
+        final long start = SystemClock.uptimeMillis();
+        Projection proj = mMap.getProjection();
+        Point startPoint = proj.toScreenLocation(marker.getPosition());
+        final LatLng startLatLng = proj.fromScreenLocation(startPoint);
+        final long duration = 500;
+
+        final Interpolator interpolator = new LinearInterpolator();
+
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                long elapsed = SystemClock.uptimeMillis() - start;
+                float t = interpolator.getInterpolation((float) elapsed
+                        / duration);
+                double lng = t * toPosition.longitude + (1 - t)
+                        * startLatLng.longitude;
+                double lat = t * toPosition.latitude + (1 - t)
+                        * startLatLng.latitude;
+                marker.setPosition(new LatLng(lat, lng));
+
+                if (t < 1.0) {
+                    // Post again 16ms later.
+                    handler.postDelayed(this, 16);
+                } else {
+                    if (hideMarker) {
+                        marker.setVisible(false);
+                    } else {
+                        marker.setVisible(true);
+                    }
+                }
+            }
+        });
+
+        prevPos = toPosition;
+    }
+
 
     /**-------- 2. Custom Class --------**/
+
+    private class CustomInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
+
+        private View infoView;
+        private TextView infoNum;
+        private TextView infoTitle;
+        private ImageView infoPic;
+        private RatingBar infoRating;
+
+
+
+        public CustomInfoWindowAdapter(){
+
+            infoView = getLayoutInflater().inflate(R.layout.map_info_window, null);
+
+
+        }
+
+        @Override
+        public View getInfoWindow(Marker marker) {
+
+
+            return null;
+        }
+
+        @Override
+        public View getInfoContents(Marker marker) {
+
+            infoNum = (TextView) infoView.findViewById(R.id.map_info_num);
+            infoTitle = (TextView) infoView.findViewById(R.id.map_info_title);
+            infoPic = (ImageView) infoView.findViewById(R.id.map_info_pic);
+            infoRating = (RatingBar) infoView.findViewById(R.id.map_info_star);
+
+
+
+            if(marker.equals(shrimp) || marker.equals(mMarker)){
+
+                infoTitle.setText("我又出來了YA!");
+                infoPic.setVisibility(View.GONE);
+                infoRating.setVisibility(View.GONE);
+
+            }
+
+            else{
+
+                int whichOne = Integer.parseInt(marker.getSnippet());
+                int picPos = mItemList.get(whichOne).getPicPos();
+                float rating = mItemList.get(whichOne).getRating();
+
+
+
+                infoTitle.setText(marker.getTitle());
+                infoPic.setImageResource(picPos);
+                infoRating.setRating(rating);
+
+
+
+                infoPic.setVisibility(View.VISIBLE);
+                infoRating.setVisibility(View.VISIBLE);
+
+
+            }
+
+
+
+
+
+
+            return infoView;
+        }
+    }
 
 
     /**-------- 3. Override Method --------**/
@@ -106,17 +240,33 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.getUiSettings().setZoomControlsEnabled(true);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(GDG_POS, 14));
 
-        mMap.addMarker(new MarkerOptions()
-                .position(GDG_POS)
-                .title("GDG高雄"));
 
 
-        //------  2. Listener  ------//
+
+        //------  2. 各種Listener  ------//
 
         mMap.setOnMarkerClickListener(this);
         mMap.setOnMapClickListener(this);
+        mMap.setOnMapLongClickListener(this);
+
+        //------  2. 路徑 初始化  ------//
+
+//        clearPolyline();
+
 
         //------  2. 插marker  ------//
+
+        //===  蝦米  ====//
+        shrimp = mMap.addMarker(new MarkerOptions()
+                            .position(GDG_POS)
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.shrimp3))
+                            .title("GDG高雄"));
+
+
+
+
+
+        //===  星星  ====//
 
         for(int i=0; i<mItemList.size(); i++) {
             mMap.addMarker(new MarkerOptions()
@@ -130,17 +280,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         }
 
+        //------  3. 實作infoWindow  ------//
 
-
-        //====  google 送的 ====//
-//        LatLng sydney = new LatLng(-34, 151);
-//        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-//        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
-
-
-
-
-
+        mMap.setInfoWindowAdapter(new CustomInfoWindowAdapter());
 
 
 
@@ -152,19 +294,99 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         Log.d(TAG,"marker clicked.");
 
+        final LatLng markerPos = marker.getPosition();
 
 
-        //-----  驗證getPosition()誤差  -----//
+        if(marker.equals(shrimp) || marker.equals(mMarker)){}
 
-        Log.d(TAG,"getPos1" + marker.getPosition());
-        Log.d(TAG,"getPos2" + marker.getPosition());
-        Log.d(TAG,"getPos3" + marker.getPosition());
-        Log.d(TAG,"getPos4" + marker.getPosition());
+        else{
 
 
-        int i = Integer.parseInt(marker.getSnippet());
-        final LatLng markerPos = listPoint.get(i);
 
+
+            //-----  驗證getPosition()誤差  -----//
+
+            Log.d(TAG, "getPos1 位置 --" + marker.getPosition());
+            Log.d(TAG, "getPos2 位置 --" + marker.getPosition());
+            Log.d(TAG, "getPos3 位置 --" + marker.getPosition());
+            Log.d(TAG, "getPos4 位置 --" + marker.getPosition());
+
+
+
+    //        int i = Integer.parseInt(marker.getSnippet());
+    //        final LatLng markerPos = listPoint.get(i);
+
+
+
+
+
+
+
+
+
+
+
+            //-----  2. marker 跳動特效  -----//
+            final Handler handler = new Handler();
+            final long start = SystemClock.uptimeMillis();
+            Projection proj = mMap.getProjection();
+            Point startPoint = proj.toScreenLocation(markerPos);
+            startPoint.offset(0, -100);
+            final LatLng startLatLng = proj.fromScreenLocation(startPoint);
+            final long duration = 1500;
+            final Interpolator interpolator = new BounceInterpolator();
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    long elapsed = SystemClock.uptimeMillis() - start;
+                    float t = interpolator.getInterpolation((float) elapsed / duration);
+                    double lng = t * markerPos.longitude + (1 - t) * startLatLng.longitude;
+                    double lat = t * markerPos.latitude + (1 - t) * startLatLng.latitude;
+                    marker.setPosition(new LatLng(lat, lng));
+                    if (t < 1.0) {
+                        // Post again 16ms later.
+                        handler.postDelayed(this, 16);
+                    }
+                }
+            });
+
+
+            //-----  3. 出現infoWindow  -----//
+
+            marker.showInfoWindow();
+
+
+            //-----  4. 我進去了  -----//
+            animateMarker(shrimp, markerPos,true);
+        }
+
+        return true;
+    }
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+
+        Log.d(TAG,"map clicked.");
+
+        CameraPosition clickPos = new CameraPosition.Builder()
+                .target(GDG_POS)
+                .zoom(14)
+                .tilt(0)
+                .build();
+
+        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(clickPos));
+
+        //-----  4. 我又出來了  -----//
+
+
+        shrimp.setPosition(GDG_POS);
+        shrimp.setVisible(true);
+        shrimp.showInfoWindow();
+
+    }
+
+    @Override
+    public void onMapLongClick(LatLng latLng) {
 
 
         //-----  1. 轉移 camera  -----//
@@ -174,8 +396,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         startingLocation.setLongitude(mMap.getCameraPosition().target.longitude);
 
         Location endingLocation = new Location("ending point");
-        endingLocation.setLatitude(markerPos.latitude);
-        endingLocation.setLongitude(markerPos.longitude);
+        endingLocation.setLatitude(latLng.latitude);
+        endingLocation.setLongitude(latLng.longitude);
 
         float targetBearing = startingLocation.bearingTo(endingLocation);
 
@@ -183,7 +405,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         CameraPosition cameraPosition =
                 new CameraPosition.Builder()
-                        .target(marker.getPosition())
+                        .target(latLng)
                         .tilt(67.5f)
                         .bearing(targetBearing)
                         .zoom(17)
@@ -192,41 +414,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
 
 
-        //-----  2. marker 跳動特效  -----//
-        final Handler handler = new Handler();
-        final long start = SystemClock.uptimeMillis();
-        Projection proj = mMap.getProjection();
-        Point startPoint = proj.toScreenLocation(markerPos);
-        startPoint.offset(0, -100);
-        final LatLng startLatLng = proj.fromScreenLocation(startPoint);
-        final long duration = 1500;
-        final Interpolator interpolator = new BounceInterpolator();
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                long elapsed = SystemClock.uptimeMillis() - start;
-                float t = interpolator.getInterpolation((float) elapsed / duration);
-                double lng = t * markerPos.longitude + (1 - t) * startLatLng.longitude;
-                double lat = t * markerPos.latitude + (1 - t) * startLatLng.latitude;
-                marker.setPosition(new LatLng(lat, lng));
-                if (t < 1.0) {
-                    // Post again 16ms later.
-                    handler.postDelayed(this, 16);
-                }
-            }
-        });
+        //-----  2. 生marker  -----//
+        String zoom = "Zoom : " + String.valueOf(mMap.getCameraPosition().zoom);
+
+        if(mMarker == null){
+
+            mMarker = mMap.addMarker(new MarkerOptions()
+                    .position(latLng)
+                    .title(zoom));
+
+        }else{
+
+            mMarker.getPosition(latLng);
+        }
 
 
 
 
-
-        return true;
-    }
-
-    @Override
-    public void onMapClick(LatLng latLng) {
-
-
+        mMarker.showInfoWindow();
 
     }
 }
